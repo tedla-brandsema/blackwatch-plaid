@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -150,24 +149,24 @@ func TestAddLengthPrefix(t *testing.T) {
 			name:          "Valid small data",
 			input:         []byte("hello"),
 			expectedError: nil,
-			expectedSize:  prefixByteSize + 5, // 4 bytes for prefix + 5 bytes of data
+			expectedSize:  prefixBytes + 5, // 4 bytes for prefix + 5 bytes of data
 		},
 		{
 			name:          "Empty data",
 			input:         []byte{},
 			expectedError: nil,
-			expectedSize:  prefixByteSize, // Only the prefix
+			expectedSize:  prefixBytes, // Only the prefix
 		},
 		{
 			name:          "Maximum allowed size",
-			input:         bytes.Repeat([]byte{0xAA}, math.MaxUint32),
+			input:         bytes.Repeat([]byte{0xAA}, maxDataBytes),
 			expectedError: nil,
-			expectedSize:  prefixByteSize + int(math.MaxUint32),
+			expectedSize:  maxTotalBytes,
 		},
 		{
 			name:          "Exceeding maximum size",
-			input:         bytes.Repeat([]byte{0xBB}, math.MaxUint32+1),
-			expectedError: fmt.Errorf("maximum allowed bytes %d exceeded: found %d", math.MaxUint32, math.MaxUint32+1),
+			input:         bytes.Repeat([]byte{0xBB}, maxDataBytes+1),
+			expectedError: fmt.Errorf("maximum allowed bytes %d exceeded: found %d", maxDataBytes, maxDataBytes+1),
 			expectedSize:  0,
 		},
 	}
@@ -188,7 +187,7 @@ func TestAddLengthPrefix(t *testing.T) {
 					t.Fatalf("expected size %d, got %d", test.expectedSize, len(output))
 				}
 				// Verify prefix
-				prefix := binary.LittleEndian.Uint32(output[:prefixByteSize])
+				prefix := binary.LittleEndian.Uint32(output[:prefixBytes])
 				if int(prefix) != len(test.input) {
 					t.Fatalf("expected prefix %d, got %d", len(test.input), prefix)
 				}
@@ -213,32 +212,32 @@ func TestRemoveLengthPrefix(t *testing.T) {
 		{
 			name:          "Empty prefixed data",
 			input:         append([]byte{0x00, 0x00, 0x00, 0x00}, []byte{}...), // 0 length prefix
-			expectedError: nil,
+			expectedError: corruptDataError,
 			expectedData:  []byte{},
 		},
 		{
-			name:          "Missing bytes",
+			name:          "Empty data",
 			input:         []byte{0x05, 0x00, 0x00, 0x00}, // Indicates 5 bytes of data but none present
-			expectedError: errors.New("missing bytes"),
+			expectedError: corruptDataError,
 			expectedData:  nil,
 		},
 		{
 			name:          "No prefixed data found",
-			input:         []byte{0x01}, // Less than prefixByteSize
+			input:         []byte{0x01}, // Less than prefixBytes
 			expectedError: errors.New("no prefixed data found"),
 			expectedData:  nil,
 		},
 		{
 			name:          "Exceeding maximum allowed data size",
-			input:         append([]byte{0xFF, 0xFF, 0xFF, 0xFF}, bytes.Repeat([]byte{0xAA}, math.MaxUint32+1)...),
-			expectedError: fmt.Errorf("maximum allowed bytes %d exceeded: found %d", math.MaxUint32+prefixByteSize, math.MaxUint32+1+prefixByteSize),
+			input:         append([]byte{0xFF, 0xFF, 0xFF, 0xFF}, bytes.Repeat([]byte{0xAA}, maxDataBytes+1)...),
+			expectedError: fmt.Errorf("maximum allowed bytes %d exceeded: found %d", maxTotalBytes, maxTotalBytes+1),
 			expectedData:  nil,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			output, err := removeLengthPrefix(test.input)
+			_, output, err := removeLengthPrefix(test.input)
 
 			if test.expectedError != nil {
 				if err == nil || err.Error() != test.expectedError.Error() {
@@ -291,10 +290,10 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 			expectedErr: errors.New("uknown FileMode: 999"),
 		},
 		{
-			name:        "Write data exceeding MaxUint32",
+			name:        "Write data exceeding max allowed bytes",
 			mode:        OVERWRITE,
-			data:        make([]byte, math.MaxUint32+1),
-			expectedErr: errors.New("maximum allowed bytes 4294967295 exceeded: found 4294967296"),
+			data:        make([]byte, maxDataBytes+1),
+			expectedErr: fmt.Errorf("maximum allowed bytes %d exceeded: found %d", maxDataBytes, maxDataBytes+1),
 		},
 	}
 
@@ -315,7 +314,7 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 			t.Fatalf("Failed to write data: %v", err)
 		}
 
-		readData, err := readPrefixedData(testFilePath)
+		_, readData, err := readPrefixedData(testFilePath)
 		if err != nil {
 			t.Fatalf("Failed to read prefixed data: %v", err)
 		}
@@ -323,6 +322,7 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 		if string(readData) != string(data) {
 			t.Errorf("Expected data: %s, got: %s", string(data), string(readData))
 		}
+		_ = overwriteFile(testFilePath, nil) // truncate file for next test
 	})
 
 	t.Run("Append multiple pieces of data and read last", func(t *testing.T) {
@@ -341,12 +341,12 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 			t.Fatalf("Failed to read file: %v", err)
 		}
 
-		readData1, err := removeLengthPrefix(content)
+		offset, readData1, err := removeLengthPrefix(content)
 		if err != nil {
 			t.Fatalf("Failed to remove length prefix for first piece: %v", err)
 		}
 
-		readData2, err := removeLengthPrefix(content[len(data1)+8:]) // Skip prefix and data
+		_, readData2, err := removeLengthPrefix(content[offset:]) // Skip prefix and data
 		if err != nil {
 			t.Fatalf("Failed to remove length prefix for second piece: %v", err)
 		}
@@ -362,9 +362,9 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 			t.Fatalf("Failed to write corrupted data: %v", err)
 		}
 
-		_, err := readPrefixedData(testFilePath)
-		if err == nil || err.Error() != "missing bytes" {
-			t.Errorf("Expected 'missing bytes' error, got: %v", err)
+		_, _, err := readPrefixedData(testFilePath)
+		if err == nil || err.Error() != corruptDataError.Error() {
+			t.Errorf("Expected %q error, got: %v", corruptDataError, err)
 		}
 	})
 }

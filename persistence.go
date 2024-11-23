@@ -81,7 +81,11 @@ func backlogPath(root string) string {
 	return filepath.Join(root, backlogFilename)
 }
 
-const prefixByteSize = 4 // store up to math.MaxUint32
+const (
+	maxTotalBytes = math.MaxUint32
+	prefixBytes   = 3 // store up to math.MaxUint32
+	maxDataBytes  = maxTotalBytes - prefixBytes
+)
 
 func addLengthPrefix(data []byte) ([]byte, error) {
 	var err error
@@ -90,11 +94,11 @@ func addLengthPrefix(data []byte) ([]byte, error) {
 	buff := bytes.NewBuffer(b)
 
 	dataSize := len(data)
-	if dataSize > math.MaxUint32 {
-		return nil, fmt.Errorf("maximum allowed bytes %d exceeded: found %d", math.MaxUint32, dataSize)
+	if dataSize > maxDataBytes {
+		return nil, fmt.Errorf("maximum allowed bytes %d exceeded: found %d", maxDataBytes, dataSize)
 	}
 
-	prefix := make([]byte, prefixByteSize)
+	prefix := make([]byte, prefixBytes)
 	binary.LittleEndian.PutUint32(prefix, uint32(dataSize))
 	if _, err = buff.Write(prefix); err != nil {
 		return nil, err
@@ -107,25 +111,26 @@ func addLengthPrefix(data []byte) ([]byte, error) {
 	return buff.Bytes(), err
 }
 
-func removeLengthPrefix(data []byte) ([]byte, error) {
+var corruptDataError = errors.New("corrupt data")
+
+func removeLengthPrefix(data []byte) (uint32, []byte, error) {
 	dataSize := len(data)
-	if dataSize < prefixByteSize {
-		return nil, errors.New("no prefixed data found")
+	if dataSize < prefixBytes {
+		return 0, nil, errors.New("no prefixed data found")
 	}
 
-	maximumAllowedBytes := math.MaxUint32 + prefixByteSize
-	if dataSize > maximumAllowedBytes {
-		return nil, fmt.Errorf("maximum allowed bytes %d exceeded: found %d", maximumAllowedBytes, dataSize)
+	if dataSize > maxTotalBytes {
+		return 0, nil, fmt.Errorf("maximum allowed bytes %d exceeded: found %d", maxTotalBytes, dataSize)
 	}
 
-	prefix := binary.LittleEndian.Uint32(data[:prefixByteSize])
-	lastByte := prefixByteSize + prefix
+	prefix := binary.LittleEndian.Uint32(data[:prefixBytes])
+	offset := uint32(prefixBytes) + prefix
 
-	if uint32(dataSize) < lastByte {
-		return nil, errors.New("missing bytes")
+	if uint32(dataSize) < offset || prefixBytes >= offset {
+		return 0, nil, corruptDataError
 	}
 
-	return data[prefixByteSize:lastByte], nil
+	return offset, data[prefixBytes:offset], nil
 }
 
 type FileMode int
@@ -149,16 +154,16 @@ func writePrefixedData(path string, mode FileMode, data []byte) error {
 	case OVERWRITE:
 		return overwriteFile(path, prefixed)
 	default:
-		return fmt.Errorf("uknown %[1]T: %[1]d", mode)
+		return fmt.Errorf("uknown FileMode: %d", mode)
 	}
 }
 
-func readPrefixedData(path string) ([]byte, error) {
+func readPrefixedData(path string) (uint32, []byte, error) {
 	var err error
 
 	content, err := readFile(path)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
 	return removeLengthPrefix(content)
