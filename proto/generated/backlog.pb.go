@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type LifeCycle int32
+
+const (
+	LifeCycle_Open       LifeCycle = 0
+	LifeCycle_InProgress LifeCycle = 1
+	LifeCycle_Done       LifeCycle = 2
+	LifeCycle_Closed     LifeCycle = 3
+)
+
+// Enum value maps for LifeCycle.
+var (
+	LifeCycle_name = map[int32]string{
+		0: "Open",
+		1: "InProgress",
+		2: "Done",
+		3: "Closed",
+	}
+	LifeCycle_value = map[string]int32{
+		"Open":       0,
+		"InProgress": 1,
+		"Done":       2,
+		"Closed":     3,
+	}
+)
+
+func (x LifeCycle) Enum() *LifeCycle {
+	p := new(LifeCycle)
+	*p = x
+	return p
+}
+
+func (x LifeCycle) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LifeCycle) Descriptor() protoreflect.EnumDescriptor {
+	return file_backlog_proto_enumTypes[0].Descriptor()
+}
+
+func (LifeCycle) Type() protoreflect.EnumType {
+	return &file_backlog_proto_enumTypes[0]
+}
+
+func (x LifeCycle) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LifeCycle.Descriptor instead.
+func (LifeCycle) EnumDescriptor() ([]byte, []int) {
+	return file_backlog_proto_rawDescGZIP(), []int{0}
+}
+
 type Backlog struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -234,6 +286,7 @@ type Task struct {
 	Author      *Author                `protobuf:"bytes,7,opt,name=author,proto3" json:"author,omitempty"`
 	Label       *Label                 `protobuf:"bytes,8,opt,name=label,proto3" json:"label,omitempty"`
 	Parent      *Task                  `protobuf:"bytes,9,opt,name=parent,proto3" json:"parent,omitempty"`
+	Status      LifeCycle              `protobuf:"varint,10,opt,name=status,proto3,enum=main.LifeCycle" json:"status,omitempty"`
 }
 
 func (x *Task) Reset() {
@@ -329,6 +382,13 @@ func (x *Task) GetParent() *Task {
 	return nil
 }
 
+func (x *Task) GetStatus() LifeCycle {
+	if x != nil {
+		return x.Status
+	}
+	return LifeCycle_Open
+}
+
 var File_backlog_proto protoreflect.FileDescriptor
 
 var file_backlog_proto_rawDesc = []byte{
@@ -353,7 +413,7 @@ var file_backlog_proto_rawDesc = []byte{
 	0x74, 0x68, 0x6f, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03,
 	0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69,
-	0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0xc5,
+	0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0xee,
 	0x02, 0x0a, 0x04, 0x54, 0x61, 0x73, 0x6b, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a,
@@ -374,8 +434,15 @@ var file_backlog_proto_rawDesc = []byte{
 	0x2e, 0x6d, 0x61, 0x69, 0x6e, 0x2e, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x52, 0x05, 0x6c, 0x61, 0x62,
 	0x65, 0x6c, 0x12, 0x22, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x18, 0x09, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x6d, 0x61, 0x69, 0x6e, 0x2e, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x06,
-	0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2f, 0x67, 0x65, 0x6e, 0x65,
-	0x72, 0x61, 0x74, 0x65, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x12, 0x27, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73,
+	0x18, 0x0a, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0f, 0x2e, 0x6d, 0x61, 0x69, 0x6e, 0x2e, 0x4c, 0x69,
+	0x66, 0x65, 0x43, 0x79, 0x63, 0x6c, 0x65, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x2a,
+	0x3b, 0x0a, 0x09, 0x4c, 0x69, 0x66, 0x65, 0x43, 0x79, 0x63, 0x6c, 0x65, 0x12, 0x08, 0x0a, 0x04,
+	0x4f, 0x70, 0x65, 0x6e, 0x10, 0x00, 0x12, 0x0e, 0x0a, 0x0a, 0x49, 0x6e, 0x50, 0x72, 0x6f, 0x67,
+	0x72, 0x65, 0x73, 0x73, 0x10, 0x01, 0x12, 0x08, 0x0a, 0x04, 0x44, 0x6f, 0x6e, 0x65, 0x10, 0x02,
+	0x12, 0x0a, 0x0a, 0x06, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x64, 0x10, 0x03, 0x42, 0x0d, 0x5a, 0x0b,
+	0x2e, 0x2f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -390,28 +457,31 @@ func file_backlog_proto_rawDescGZIP() []byte {
 	return file_backlog_proto_rawDescData
 }
 
+var file_backlog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_backlog_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_backlog_proto_goTypes = []any{
-	(*Backlog)(nil),               // 0: main.Backlog
-	(*Label)(nil),                 // 1: main.Label
-	(*Author)(nil),                // 2: main.Author
-	(*Task)(nil),                  // 3: main.Task
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(LifeCycle)(0),                // 0: main.LifeCycle
+	(*Backlog)(nil),               // 1: main.Backlog
+	(*Label)(nil),                 // 2: main.Label
+	(*Author)(nil),                // 3: main.Author
+	(*Task)(nil),                  // 4: main.Task
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_backlog_proto_depIdxs = []int32{
-	1, // 0: main.Backlog.labels:type_name -> main.Label
-	2, // 1: main.Backlog.authors:type_name -> main.Author
-	3, // 2: main.Backlog.tasks:type_name -> main.Task
-	4, // 3: main.Task.created:type_name -> google.protobuf.Timestamp
-	4, // 4: main.Task.modified:type_name -> google.protobuf.Timestamp
-	2, // 5: main.Task.author:type_name -> main.Author
-	1, // 6: main.Task.label:type_name -> main.Label
-	3, // 7: main.Task.parent:type_name -> main.Task
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	2, // 0: main.Backlog.labels:type_name -> main.Label
+	3, // 1: main.Backlog.authors:type_name -> main.Author
+	4, // 2: main.Backlog.tasks:type_name -> main.Task
+	5, // 3: main.Task.created:type_name -> google.protobuf.Timestamp
+	5, // 4: main.Task.modified:type_name -> google.protobuf.Timestamp
+	3, // 5: main.Task.author:type_name -> main.Author
+	2, // 6: main.Task.label:type_name -> main.Label
+	4, // 7: main.Task.parent:type_name -> main.Task
+	0, // 8: main.Task.status:type_name -> main.LifeCycle
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_backlog_proto_init() }
@@ -424,13 +494,14 @@ func file_backlog_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_backlog_proto_rawDesc,
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_backlog_proto_goTypes,
 		DependencyIndexes: file_backlog_proto_depIdxs,
+		EnumInfos:         file_backlog_proto_enumTypes,
 		MessageInfos:      file_backlog_proto_msgTypes,
 	}.Build()
 	File_backlog_proto = out.File

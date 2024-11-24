@@ -30,7 +30,7 @@ message Task  {
   int64 id = 1;
   string title = 2;
   string description = 3;
-  bool isClosed  = 4;
+  int32 status = 4; // lifecycle indicator
   google.protobuf.Timestamp created = 5;
   google.protobuf.Timestamp modified = 6;
   Author author = 7;
