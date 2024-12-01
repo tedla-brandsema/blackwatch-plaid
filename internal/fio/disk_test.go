@@ -1,4 +1,4 @@
-package main
+package fio
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ func TestAppendFile(t *testing.T) {
 		}
 
 		// Append additional content
-		if err := appendFile(testFilePath, additionalContent); err != nil {
+		if err := AppendFile(testFilePath, additionalContent); err != nil {
 			t.Fatalf("Failed to append content: %v", err)
 		}
 
@@ -44,7 +44,7 @@ func TestAppendFile(t *testing.T) {
 		testFilePath := filepath.Join(tempDir, "non_existent_append_test")
 
 		content := []byte("New file content")
-		if err := appendFile(testFilePath, content); err != nil {
+		if err := AppendFile(testFilePath, content); err != nil {
 			t.Fatalf("Failed to append content to new file: %v", err)
 		}
 
@@ -73,7 +73,7 @@ func TestOverwriteFile(t *testing.T) {
 		}
 
 		// Overwrite with new content
-		if err := overwriteFile(testFilePath, newContent); err != nil {
+		if err := OverwriteFile(testFilePath, newContent); err != nil {
 			t.Fatalf("Failed to overwrite content: %v", err)
 		}
 
@@ -92,7 +92,7 @@ func TestOverwriteFile(t *testing.T) {
 		testFilePath := filepath.Join(tempDir, "non_existent_overwrite_test")
 
 		content := []byte("New content")
-		if err := overwriteFile(testFilePath, content); err != nil {
+		if err := OverwriteFile(testFilePath, content); err != nil {
 			t.Fatalf("Failed to overwrite non-existent file: %v", err)
 		}
 
@@ -118,7 +118,7 @@ func TestReadFile(t *testing.T) {
 		}
 
 		// Read and verify
-		readContent, err := readFile(testFilePath)
+		readContent, err := ReadFile(testFilePath)
 		if err != nil {
 			t.Fatalf("Failed to read file: %v", err)
 		}
@@ -131,7 +131,7 @@ func TestReadFile(t *testing.T) {
 		tempDir := t.TempDir()
 		testFilePath := filepath.Join(tempDir, "non_existent_read_test")
 
-		_, err := readFile(testFilePath)
+		_, err := ReadFile(testFilePath)
 		if err == nil {
 			t.Fatalf("Expected error, got none")
 		}
@@ -322,7 +322,7 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 		if string(readData) != string(data) {
 			t.Errorf("Expected data: %s, got: %s", string(data), string(readData))
 		}
-		_ = overwriteFile(testFilePath, nil) // truncate file for next test
+		_ = OverwriteFile(testFilePath, nil) // truncate file for next test
 	})
 
 	t.Run("Append multiple pieces of data and read last", func(t *testing.T) {
@@ -336,7 +336,7 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 		}
 
 		// Read the entire file and split into prefixed chunks for validation
-		content, err := readFile(testFilePath)
+		content, err := ReadFile(testFilePath)
 		if err != nil {
 			t.Fatalf("Failed to read file: %v", err)
 		}
@@ -358,7 +358,7 @@ func TestWriteAndReadPrefixedData(t *testing.T) {
 
 	t.Run("Read from a file with corrupted prefix", func(t *testing.T) {
 		corruptedData := append([]byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte("corrupted")...)
-		if err := overwriteFile(testFilePath, corruptedData); err != nil {
+		if err := OverwriteFile(testFilePath, corruptedData); err != nil {
 			t.Fatalf("Failed to write corrupted data: %v", err)
 		}
 

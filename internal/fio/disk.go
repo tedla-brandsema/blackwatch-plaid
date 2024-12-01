@@ -1,4 +1,4 @@
-package main
+package fio
 
 import (
 	"bytes"
@@ -9,13 +9,25 @@ import (
 	"log/slog"
 	"math"
 	"os"
-	"path/filepath"
 )
 
-const backlogFilename = ".backlog"
+func MakeDir(path string) error {
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-func appendFile(path string, b []byte) error {
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func AppendFile(path string, b []byte) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
@@ -34,7 +46,7 @@ func appendFile(path string, b []byte) error {
 	return err
 }
 
-func overwriteFile(path string, b []byte) error {
+func OverwriteFile(path string, b []byte) error {
 	var err error
 
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -56,7 +68,7 @@ func overwriteFile(path string, b []byte) error {
 	return err
 }
 
-func readFile(path string) ([]byte, error) {
+func ReadFile(path string) ([]byte, error) {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil, err
@@ -75,10 +87,6 @@ func readFile(path string) ([]byte, error) {
 	}
 
 	return content, nil
-}
-
-func backlogPath(root string) string {
-	return filepath.Join(root, backlogFilename)
 }
 
 const (
@@ -150,9 +158,9 @@ func writePrefixedData(path string, mode FileMode, data []byte) error {
 
 	switch mode {
 	case APPEND:
-		return appendFile(path, prefixed)
+		return AppendFile(path, prefixed)
 	case OVERWRITE:
-		return overwriteFile(path, prefixed)
+		return OverwriteFile(path, prefixed)
 	default:
 		return fmt.Errorf("uknown FileMode: %d", mode)
 	}
@@ -161,7 +169,7 @@ func writePrefixedData(path string, mode FileMode, data []byte) error {
 func readPrefixedData(path string) (uint32, []byte, error) {
 	var err error
 
-	content, err := readFile(path)
+	content, err := ReadFile(path)
 	if err != nil {
 		return 0, nil, err
 	}
