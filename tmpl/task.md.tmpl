@@ -1,0 +1,12 @@
+{{ define "task.tmpl" }}
+# [{{ .ID }}]: {{ .Title }}
+
+* Created: {{.Created}}
+* Modified: {{.Modified}}
+
+{{ .Description }}
+{{ end }}
+
+{{ define "task-summary.tmpl" -}}
+- [ ] {{ .Title }}
+{{ end }}
