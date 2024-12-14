@@ -91,7 +91,7 @@ func ReadFile(path string) ([]byte, error) {
 
 const (
 	maxTotalBytes = math.MaxUint32
-	prefixBytes   = 3 // store up to math.MaxUint32
+	prefixBytes   = 4 // store up to math.MaxUint32
 	maxDataBytes  = maxTotalBytes - prefixBytes
 )
 
